@@ -1,11 +1,26 @@
 <?php
-
+session_start();
 /**
  * createGameData
  * Creates a new session data
  * 
  * @return bool
  */
+
+ function createGameData () {
+   $_SESSION['blacksmith'] = [
+     'response' => [],
+     'gold' => 15,
+     'wood' => 0,
+     'ore' => 0,
+     'swords' => 0,
+     'axes' => 0,
+     'staffs' => 0,
+     'fire' => false
+  ];
+
+  return isset($_SESSION['blacksmith']);
+ }
 
 
 /**
@@ -44,6 +59,21 @@ function updateResponse ($response) {
  * @return string
  */
 
+ function fire () {
+   if ($_SESSION['blacksmith']['fire']) {
+     $_SESSION['blacksmith']['fire'] = false;
+     return "You ruined the fire by putting it out.";
+   } else {
+     if ($_SESSION['blacksmith']['wood'] > 0) {
+       $_SESSION['blacksmith']['wood']--;
+       $_SESSION['blacksmith']['fire'] = true;
+
+       return "You brought the fire back to life.";
+     } else {
+       return "You don't have enough wood to make a fire.";
+     }
+   }
+ }
 
 /**
  * buy
@@ -54,6 +84,28 @@ function updateResponse ($response) {
  * @return string
  */
 
+ function buy ($item) {
+   if ($_SESSION['blacksmith']['fire']) {
+     return "You have to put out the fire first.";
+   } else {
+     if (isset($item)) {
+       if (isset(SETTINGS[$item])) {
+         if ($_SESSION['blacksmith']['gold'] >= SETTINGS[$item]['gold']) {
+           $_SESSION['blacksmith'][$item]++;
+           $_SESSION['blacksmith']['gold'] -= SETTINGS[$item]['gold'];
+           return "You have bought one {$item}.";
+         } else {
+           return "You're too broke to buy this.";
+         }
+       } else {
+         return "You cannot buy a {$item}.";
+       }
+
+     } else {
+       return "You must choose an item to buy.";
+     }
+   }
+ }
 
 /**
  * make
@@ -118,4 +170,20 @@ function help () {
  *    - else
  *      - updateResponse with invalid command  
  */
+
+ if (isset($_POST['command'])) {
+   // splits command and options, returns array
+   $command = explode(' ', strtolower($_POST['command']));
+   if (function_exists($command[0])) {
+     if (isset($command[1])) {
+       $response = $command[0]($command[1]);
+       updateResponse($response);
+     } else {
+       $response = $command[0]();
+       updateResponse($response);
+     }
+   } else {
+     updateResponse("{$_POST['command']} is not a valid command.");
+   }
+ }
 
